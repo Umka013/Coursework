@@ -1,0 +1,23 @@
+# vtk DataFile Version 3.0
+Finite Element Solution
+ASCII
+DATASET UNSTRUCTURED_GRID
+
+POINTS 4 float
+0 0 0.0
+1 0 0.0
+1 1 0.0
+0 1 0.0
+
+CELLS 1 5
+4 0 1 2 3
+
+CELL_TYPES 1
+9
+
+POINT_DATA 4
+VECTORS displacement float
+0 0 0.0
+0 0 0.0
+0.00100738 -0.00940221 0.0
+-0.00100738 -0.00940221 0.0
