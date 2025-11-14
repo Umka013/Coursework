@@ -25,39 +25,7 @@ class FiniteElement {
   using ElasticityMatrix = Eigen::Matrix<Value, nVoigt, nVoigt>;
   using ShapeFunctions = Eigen::Vector<Value, nNodes>;
   using DifferentiationMatrix = Eigen::Matrix<Value, nVoigt, nElemDofs>;
-
-  void calculateStiffnessMatrixNORMALNO(
-      StiffnessMatrix &sm, Nodes const &nodes, Value const &elasticityModulus,
-      Value const &poissonRatio, DifferentiationMatrix &dm) {
-    sm.setZero();
-    Coordinates lsX, lsY;
-    this->findLimits(lsX, lsY, nodes);
-
-    Coordinates od;
-    this->calculateOverallDimensions(od, lsX, lsY);
-    Value const &a = od(0), &b = od(1);
-
-    ElasticityMatrix em;
-    this->calculateElasticityMatrix(em, elasticityModulus, poissonRatio);
-
-    const Value gaussPoints[2] = {
-        -1.0 / std::sqrt(3.0) * a * 0.5, 1.0 / std::sqrt(3.0) * b * 0.5};
-    const Value gaussWeights[2] = {1.0 * a * 0.5, 1.0 * b * 0.5};
-
-    Value xi, eta, weight;
-
-    for (int i = 0; i < nNodeDofs; ++i) {
-      for (int j = 0; j < nNodeDofs; ++j)  // переписать 2
-      {
-        xi = gaussPoints[i];
-        eta = gaussPoints[j];
-        weight = gaussWeights[i] * gaussWeights[j];
-
-        this->calculateDifferentiationMatrix(dm, xi, eta, a, b);
-        sm += dm.transpose() * em * dm * weight;
-      }
-    }
-  }
+  using DeformationVectors = Eigen::Matrix<Value, nVoigt, nNodes>; 
 
   void integrateSubfields(
       StiffnessMatrix &sm, Nodes const &nodes, Value const &elasticityModulus,
@@ -128,11 +96,76 @@ class FiniteElement {
     }
   }
 
-  Vector calculateNDS(
-      Vector const &displacementVector, Value const &elastMod,
-      DifferentiationMatrix &dm) {
-    Vector deformationVect = dm * displacementVector;
-    return elastMod * deformationVect;
+  DeformationVectors calculateNDS(
+      Vector const &displacementVector,
+      Value const &elastMod,
+      Value const &poissonRat,
+      Nodes const &nodes) {
+    Coordinates lsX, lsY;
+    this->findLimits(lsX, lsY, nodes);
+    
+    Coordinates od;
+    this->calculateOverallDimensions(od, lsX, lsY);
+    Value const &a = od(0), &b = od(1);
+    
+    Value xi_loc = a/2;
+    Value eta_loc = b/2;
+    
+    ElasticityMatrix em;
+    calculateElasticityMatrix(em, elastMod, poissonRat);
+        
+    DifferentiationMatrix dm1;
+    DifferentiationMatrix dm2;
+    DifferentiationMatrix dm3;
+    DifferentiationMatrix dm4;
+    calculateDifferentiationMatrix(dm1, -xi_loc, -eta_loc, a, b);
+    calculateDifferentiationMatrix(dm2, xi_loc, -eta_loc, a, b);
+    calculateDifferentiationMatrix(dm3, xi_loc, eta_loc, a, b);
+    calculateDifferentiationMatrix(dm4, -xi_loc, eta_loc, a, b);
+    DeformationVectors deformationVectors;
+
+    deformationVectors.setZero();
+    deformationVectors.col(0) = dm1 * displacementVector;
+    deformationVectors.col(1) = dm2 * displacementVector;
+    deformationVectors.col(2) = dm3 * displacementVector;
+    deformationVectors.col(3) = dm4 * displacementVector;
+    return em * deformationVectors;
+  }
+
+    DeformationVectors calculateDifVect(
+      Vector const &displacementVector,
+      Value const &elastMod,
+      Value const &poissonRat,
+      Nodes const &nodes) {
+    Coordinates lsX, lsY;
+    this->findLimits(lsX, lsY, nodes);
+    
+    Coordinates od;
+    this->calculateOverallDimensions(od, lsX, lsY);
+    Value const &a = od(0), &b = od(1);
+    
+    Value xi_loc = a/2;
+    Value eta_loc = b/2;
+    
+    ElasticityMatrix em;
+    calculateElasticityMatrix(em, elastMod, poissonRat);
+        
+    DifferentiationMatrix dm1;
+    DifferentiationMatrix dm2;
+    DifferentiationMatrix dm3;
+    DifferentiationMatrix dm4;
+    calculateDifferentiationMatrix(dm1, -xi_loc, -eta_loc, a, b);
+    calculateDifferentiationMatrix(dm2, xi_loc, -eta_loc, a, b);
+    calculateDifferentiationMatrix(dm3, xi_loc, eta_loc, a, b);
+    calculateDifferentiationMatrix(dm4, -xi_loc, eta_loc, a, b);
+    DeformationVectors deformationVectors;
+
+    deformationVectors.setZero();
+    deformationVectors.col(0) = dm1 * displacementVector;
+    deformationVectors.col(1) = dm2 * displacementVector;
+    deformationVectors.col(2) = dm3 * displacementVector;
+    deformationVectors.col(3) = dm4 * displacementVector;
+    return deformationVectors;
   }
 
  private:

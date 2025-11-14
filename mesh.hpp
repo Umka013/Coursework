@@ -77,23 +77,7 @@ class Mesh {
     fe.integrateSubfields(sm, feNodes, elasticityModulus, poissonRatio, dm);
 
     stiffnessMatrix = sm;
-
-    // ДОБАВЬТЕ ЭТО: пересчитайте dm для центра элемента
-    // Найдём размеры элемента
-    typename FiniteElement::Coordinates lsX, lsY, od;
-    Value minx = feNodes(0)(0), maxx = feNodes(0)(0);
-    Value miny = feNodes(0)(1), maxy = feNodes(0)(1);
-    for (Size i = 0; i < feNodes.size(); ++i) {
-      if (feNodes(i)(0) < minx) minx = feNodes(i)(0);
-      if (feNodes(i)(0) > maxx) maxx = feNodes(i)(0);
-      if (feNodes(i)(1) < miny) miny = feNodes(i)(1);
-      if (feNodes(i)(1) > maxy) maxy = feNodes(i)(1);
-    }
-    Value a = maxx - minx;
-    Value b = maxy - miny;
-
-    // Вычисляем dm в центре элемента (xi=0, eta=0)
-    fe.calculateDifferentiationMatrix(dm, 0.0, 0.0, a, b);
+    
     this->dm = dm;
   }
 
@@ -165,8 +149,21 @@ class Mesh {
 
   const Vector &getDisplacementVector() const { return displacementVector; }
 
-  const Vector getNDS(Value const &elastMod) {
-    return fe.calculateNDS(displacementVector, elastMod, this->dm);
+  const typename FiniteElement::DeformationVectors getNDS(Value const &elastMod, Value const &poissonRat) {
+    typename FiniteElement::Nodes feNodes;
+
+    for (Size i = 0; i < feNodes.size(); ++i) {
+      feNodes(i) = nodes(i).coords;
+    }
+    return fe.calculateNDS(displacementVector, elastMod, poissonRat, feNodes);
+  }
+    const typename FiniteElement::DeformationVectors getDif(Value const &elastMod, Value const &poissonRat) {
+    typename FiniteElement::Nodes feNodes;
+
+    for (Size i = 0; i < feNodes.size(); ++i) {
+      feNodes(i) = nodes(i).coords;
+    }
+    return fe.calculateDifVect(displacementVector, elastMod, poissonRat, feNodes);
   }
 
  private:

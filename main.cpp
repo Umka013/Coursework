@@ -63,8 +63,11 @@ int main() {
   std::cout << "Press Enter to continue..." << std::endl;
   // std::cin.get();
 
-  std::cout << "\n\n\nDisplacement Vector" << std::endl;
-  std::cout << mesh.getNDS(elastMod) << std::endl;
+  std::cout << "\n\n\nSTRESS EMAE" << std::endl;
+  std::cout << mesh.getNDS(elastMod, poissRat) << std::endl;
+
+  std::cout << "\n\n\nDEFORMACII" << std::endl;
+  std::cout << mesh.getDif(elastMod, poissRat) << std::endl;
 
   return 0;
 }
